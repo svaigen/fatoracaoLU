@@ -7,12 +7,37 @@
 
 #define MAX_LINHAS 10000
 #define MAX_COLUNAS 10000
+#define FATOR_ERRO 0.5
 
-float **geraMatrizInicial(int linhas, int colunas){
-	float **matriz = malloc(sizeof(float*)*linhas);
+double **leArquivo(char *caminho, int linhas){
+	FILE* arq;
+	char ch;
+	double **m = malloc(sizeof(double*)*linhas);
+	int i, j, k, l;
+  for(i=0;i<linhas;i++){
+    m[i] = malloc(sizeof(double)*(linhas+1));
+  }
+	arq = fopen(caminho, "r");
+	if(arq == NULL){
+	    printf("Arquivo não abriu\n");
+	}else{
+		for(i = 0; i<linhas; i++){
+			for (j = 0; j < linhas; j++){
+				fscanf(arq,"%lf ",&m[i][j]);
+			}
+			fscanf(arq,"%lf \n",&m[i][j]);
+		}
+	}
+
+	fclose(arq);
+	return m;
+}
+
+double **geraMatrizInicial(int linhas, int colunas){
+	double **matriz = malloc(sizeof(double*)*linhas);
 	int i, j;
   for(i=0;i<linhas;i++){
-    matriz[i] = malloc(sizeof(float)*colunas);
+    matriz[i] = malloc(sizeof(double)*colunas);
 		//for(j=0;j<colunas;j++){
 			//matriz[i][j] = (rand() % 10) +1;
 		//}
@@ -32,25 +57,25 @@ float **geraMatrizInicial(int linhas, int colunas){
   return matriz;
 }
 
-float **inicializaMatrizU(float **matrizA, int linhas, int colunas){
-	float **matriz = malloc(sizeof(float*)*linhas);
+double **inicializaMatrizU(double **matrizA, int linhas){
+	double **matriz = malloc(sizeof(double*)*linhas);
 	int i, j;
   for(i=0;i<linhas;i++){
-    matriz[i] = malloc(sizeof(float)*(colunas-1));
-		for(j=0;j<colunas;j++){
+    matriz[i] = malloc(sizeof(double)*(linhas));
+		for(j=0;j<linhas;j++){
       matriz[i][j] = matrizA[i][j];
 		}
   }
   return matriz;	
 }
 
-float **inicializaMatrizL(float **matrizA, int linhas, int colunas){
-	float **matriz = malloc(sizeof(float*)*linhas);
+double **inicializaMatrizL(double **matrizA, int linhas){
+	double **matriz = malloc(sizeof(double*)*linhas);
 	int i, j;
   for(i=0;i<linhas;i++){
-    matriz[i] = malloc(sizeof(float)*(colunas-1));
+    matriz[i] = malloc(sizeof(double)*(linhas));
 		int j;
-		for(j=0;j<colunas;j++){
+		for(j=0;j<linhas;j++){
 			if (j==0){
 				matriz[i][j] = matrizA[i][j];
 			}
@@ -62,7 +87,7 @@ float **inicializaMatrizL(float **matrizA, int linhas, int colunas){
   return matriz;	
 }
 
-void imprimeMatriz(float **matriz, int linhas, int colunas){
+void imprimeMatriz(double **matriz, int linhas, int colunas){
 	int i,j;
   for(i=0;i<linhas;i++){
     for(j=0;j<colunas;j++){
@@ -73,19 +98,19 @@ void imprimeMatriz(float **matriz, int linhas, int colunas){
 	printf("\n");
 }
 
-void **calculaMatrizLU(float **matriz, float **matrizL, float **matrizU, int linhas, int colunas){  
+void **calculaMatrizLU(double **matriz, double **matrizL, double **matrizU, int linhas){  
 	int i;
-	for(i=0; i< colunas-1; i++){
+	for(i=0; i< linhas; i++){
 		int linhaZerar = i+1;
 		for(linhaZerar; linhaZerar < linhas; linhaZerar++){
-			int linhaPivo = linhaZerar-1;
+			int linhaPivo = i;
 			while(matrizU[linhaPivo][i] == 0){
 				linhaPivo--;
 			} 
-			float coeficiente = (-1)* (matrizU[linhaZerar][i]/matrizU[linhaPivo][i]);
+			double coeficiente = (-1)* (matrizU[linhaZerar][i]/matrizU[linhaPivo][i]);
 			int j;
 			int cont = 0;
-			for(j=i; j < colunas; j++){
+			for(j=i; j < linhas; j++){
 				matrizU[linhaZerar][j] = matrizU[linhaPivo][j] * coeficiente + matrizU[linhaZerar][j];
 				cont++;
 			}
@@ -94,20 +119,20 @@ void **calculaMatrizLU(float **matriz, float **matrizL, float **matrizU, int lin
 	}
 }
 
-float *extraiResultados(float **matriz, int linhas, int colunas){
+double *extraiResultados(double **matriz, int linhas, int colunas){
 	int i;
-	float *resultados = malloc(sizeof(float)*linhas);
+	double *resultados = malloc(sizeof(double)*linhas);
 	for(i=0; i< linhas; i++){
 		resultados[i] = matriz[i][colunas-1];
 	}
 	return resultados;
 }
 
-void calculaY(float *resultados, float **matrizL, float *vetorY, int linhas){
+void calculaY(double *resultados, double **matrizL, double *vetorY, int linhas){
 	vetorY[0] = resultados[0];
 	int i,j;
 	for(i=1; i < linhas; i++){
-		float valor = resultados[i];
+		double valor = resultados[i];
 		for(j=0; j < i; j++){
 			valor -= matrizL[i][j]*vetorY[j];
 		}
@@ -115,11 +140,11 @@ void calculaY(float *resultados, float **matrizL, float *vetorY, int linhas){
 	}	
 }
 
-void calculaIncognitas(float *vetorY, float **matrizU, float *incognitas, int linhas, int colunas){
+void calculaIncognitas(double *vetorY, double **matrizU, double *incognitas, int linhas, int colunas){
 	incognitas[linhas] = vetorY[linhas]/matrizU[linhas][colunas];
 	int i,j;
 	for(i=linhas-1; i >=0 ; i--){
-		float valor = vetorY[i];
+		double valor = vetorY[i];
 		for(j=i+1; j<=colunas; j++){
 			valor -= matrizU[i][j] * incognitas[j];
 		}
@@ -127,25 +152,58 @@ void calculaIncognitas(float *vetorY, float **matrizU, float *incognitas, int li
 	} 
 }
 
+void verificaCorretude(double **matrizL, double **matrizU, double **matriz,int linhas){
+	int i,j,k;
+	double soma;
+	for(i=0;i<linhas;i++){
+		for(j=0; j<linhas; j++){
+			soma = 0;
+			for(k=0; k<linhas; k++){
+				soma+= matrizL[i][k] * matrizU[k][j];
+			}			
+			if(soma >= (matriz[i][j] + FATOR_ERRO) || soma <= (matriz[i][j] - FATOR_ERRO)){
+				printf("Erro na verificacão da linha %d x coluna %d! ",i,j);			
+				printf("(esperado: %lf; encontrado %lf)\n",matriz[i][j],soma);
+			}
+		}
+	}
+}
 
-int main(int argc, char *argv){
-  int linhas = 3;
-  int colunas = 4;
-  float **matriz = geraMatrizInicial(linhas,colunas);
-	float **matrizU = inicializaMatrizU(matriz, linhas, colunas-1);
-	float **matrizL = inicializaMatrizL(matriz, linhas, colunas-1);
+void gravaResposta(double *incognitas,char *linhas){
+	char caminho[100] = "respostas/\0";
+	strcat(caminho,linhas);
+	strcat(caminho,".txt");
+	FILE* arq;
+	arq = fopen(caminho, "w");
+	if(arq == NULL){
+	    printf("ERRO! Não foi possível criar o arquivo de saída!\n");
+	}else{
+		int l = atoi(linhas);
+		int i;
+		for(i = 0; i<l; i++){			
+			char valor[20]; 
+			sprintf(valor,"%.4f",incognitas[i]);
+			fputs(valor,arq);
+			fputs("\n",arq);
+		}
+		printf("Arquivo de saída gerado com sucesso. Os resultados possuem 4 casas decimais. Veja a saída em: %s\n",caminho);
+	}
 
-  calculaMatrizLU(matriz, matrizL, matrizU, linhas, colunas-1);
+}
 
-	float *vetorY = malloc(sizeof(double)*linhas);
-	float *incognitas = malloc(sizeof(double)*linhas);	
-	float *resultados = extraiResultados(matriz,linhas,colunas);
+int main(int argc, char *argv[]){
+  int linhas = atoi(argv[2]);
+  int colunas = linhas+1;
+  double **matriz = leArquivo(argv[1],1024);
+	double **matrizU = inicializaMatrizU(matriz, linhas);
+	double **matrizL = inicializaMatrizL(matriz, linhas);
+  calculaMatrizLU(matriz, matrizL, matrizU, linhas);
+
+	double *vetorY = malloc(sizeof(double)*linhas);
+	double *incognitas = malloc(sizeof(double)*linhas);	
+	double *resultados = extraiResultados(matriz,linhas,colunas);
 	calculaY(resultados,matrizL,vetorY, linhas);	
 	calculaIncognitas(vetorY,matrizU,incognitas, linhas-1, linhas-1);
-
-	printf("Resultado das incognitas: \n\n");
-	int i;
-	for(i=0; i< linhas; i++){
-		printf("%.2f \n",incognitas[i]);
-	}
+	verificaCorretude(matrizL, matrizU, matriz,linhas);
+	gravaResposta(incognitas,argv[2]);
 }
