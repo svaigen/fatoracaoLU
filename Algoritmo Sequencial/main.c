@@ -33,30 +33,6 @@ double **leArquivo(char *caminho, int linhas){
 	return m;
 }
 
-double **geraMatrizInicial(int linhas, int colunas){
-	double **matriz = malloc(sizeof(double*)*linhas);
-	int i, j;
-  for(i=0;i<linhas;i++){
-    matriz[i] = malloc(sizeof(double)*colunas);
-		//for(j=0;j<colunas;j++){
-			//matriz[i][j] = (rand() % 10) +1;
-		//}
-  }
-	matriz[0][0] = 5;
-	matriz[0][1] = 1;
-	matriz[0][2] = -2;
-	matriz[0][3] = 10;
-	matriz[1][0] = 3;
-	matriz[1][1] = -9.4;
-	matriz[1][2] = 1.8;
-	matriz[1][3] = 22;
-	matriz[2][0] = 1;
-	matriz[2][1] = 2.2;
-	matriz[2][2] = 4.6;
-	matriz[2][3] = 10;
-  return matriz;
-}
-
 double **inicializaMatrizU(double **matrizA, int linhas){
 	double **matriz = malloc(sizeof(double*)*linhas);
 	int i, j;
@@ -98,7 +74,7 @@ void imprimeMatriz(double **matriz, int linhas, int colunas){
 	printf("\n");
 }
 
-void **calculaMatrizLU(double **matriz, double **matrizL, double **matrizU, int linhas){  
+void calculaMatrizLU(double **matriz, double **matrizL, double **matrizU, int linhas){  
 	int i;
 	for(i=0; i< linhas; i++){
 		int linhaZerar = i+1;
@@ -194,7 +170,7 @@ void gravaResposta(double *incognitas,char *linhas){
 int main(int argc, char *argv[]){
   int linhas = atoi(argv[2]);
   int colunas = linhas+1;
-  double **matriz = leArquivo(argv[1],1024);
+  double **matriz = leArquivo(argv[1],linhas);
 	double **matrizU = inicializaMatrizU(matriz, linhas);
 	double **matrizL = inicializaMatrizL(matriz, linhas);
   calculaMatrizLU(matriz, matrizL, matrizU, linhas);
