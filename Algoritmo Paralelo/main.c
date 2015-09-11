@@ -169,6 +169,16 @@ void criaNovaMatrizLU(double *matrizL, double *matrizU, int linhas, int inicio, 
 		}
 }
 
+void copiaMatrizLU(double *matrizL, double *matrizU, int linhas, int inicio, int fim, int coluna, double infoMatrizU[], double infoMatrizL[]){  
+	int i,j;
+		for(i=inicio;i<fim+1;i++){
+			for(j=0;j<linhas;j++){
+				infoMatrizU[i*linhas+j] = matrizU[i*linhas+j];
+			}
+			infoMatrizL[i*linhas+coluna] = matrizL[i*linhas+coluna];	
+		}
+}
+
 int main(int argc, char *argv[]){
   int linhas = atoi(argv[2]);
   int colunas = linhas+1;
@@ -213,30 +223,37 @@ int main(int argc, char *argv[]){
 			divisao = linhasConsideradas/numprocs;
 			int qtdProcs = (numprocs>=linhasConsideradas?linhasConsideradas:numprocs);
 			linhaPivo = i;
-			printf("divisao %d\n",divisao);
-			printf("qtdP %d\n",qtdProcs);
+		//	printf("divisao %d\n",divisao);
+		//	printf("qtdP %d\n",qtdProcs);
 			while(matrizU[linhaPivo*linhas+i] == 0){
 				linhaPivo--;
 			}
-	//		inicio = i+1;
+			if (divisao == 0){	
+				inicio = i+1;
+			}
 		//	fim = 0;
 			for(j=1;j<=qtdProcs;j++){
 				MPI_Send(&linhaPivo,1,MPI_INT,j,1,MPI_COMM_WORLD);
 				MPI_Send(matrizU,(linhas*linhas),MPI_DOUBLE,j,1,MPI_COMM_WORLD);
 				MPI_Send(matrizL,linhas*linhas,MPI_DOUBLE,j,1,MPI_COMM_WORLD);
+				if (divisao == 0){
+					fim = inicio;	
+				}else{
 				inicio = (j-1) * divisao + i;
 				//if (j==1){
 					inicio++;
 				//}
 				fim = j*divisao +i;
+				}
 				if (j == qtdProcs){
 					fim = linhas-1;
 				}
-				printf("inicio %d\n",inicio);
-				printf("fim %d\n",fim);
+			//	printf("inicio %d\n",inicio);
+			//	printf("fim %d\n",fim);
 				MPI_Send(&fim,1,MPI_INT,j,1,MPI_COMM_WORLD);
 				MPI_Send(&inicio,1,MPI_INT,j,1,MPI_COMM_WORLD);
 			  MPI_Send(&i,1,MPI_INT,j,1,MPI_COMM_WORLD);
+				inicio++;
 			}			
 			for(j=1;j<=qtdProcs;j++){				
 				MPI_Recv(&info,sizeof(info),MPI_PACKED,MPI_ANY_SOURCE,1,MPI_COMM_WORLD, &status);	
@@ -271,11 +288,8 @@ int main(int argc, char *argv[]){
 			MPI_Recv(&colunaAtual,1,MPI_INT,mestre,1,MPI_COMM_WORLD, &status);	
 
 			calculaMatrizLU(matrizL, matrizU, linhas, linhaPivo, inicio, fim, colunaAtual);
-			int i;
-			for(i=0;i<linhas*linhas;i++){
-				info.matrizU[i] = matrizU[i];
-				info.matrizL[i] = matrizL[i];
-			}	
+			copiaMatrizLU(matrizL, matrizU, linhas, inicio, fim, colunaAtual, info.matrizU, info.matrizL);
+
 			info.inicio = inicio;
 			info.fim = fim;
 			MPI_Send(&info,sizeof(info),MPI_PACKED,mestre,1,MPI_COMM_WORLD);			
