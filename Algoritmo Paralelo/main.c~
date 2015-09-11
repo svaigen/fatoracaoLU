@@ -34,10 +34,12 @@ double *leArquivo(char *caminho, int linhas, int colunas){
 double *inicializaMatrizU(double *matrizA, int linhas){
 	double *matriz = malloc(sizeof(double)*linhas*linhas);
 	int i, j;
+	int soma =0;
   for(i=0;i<linhas;i++){
 		for(j=0;j<linhas;j++){
-      matriz[i*linhas+j] = matrizA[i*linhas+j];
+      matriz[i*linhas+j] = matrizA[i*linhas+j+soma];
 		}
+		soma++;
   }
   return matriz;	
 }
@@ -48,11 +50,10 @@ double *inicializaMatrizL(double *matrizA, int linhas){
   for(i=0;i<linhas;i++){
 		int j;
 		for(j=0;j<linhas;j++){
-			if (j==0){
-				matriz[i*linhas+j] = matrizA[i*linhas+j];
-			}
 			if(i==j){
 				matriz[i*linhas+j] = 1;
+			}else{
+				matriz[i*linhas+j] = 0;
 			}
 		}
   }
@@ -74,17 +75,19 @@ void imprimeMatriz(double *matriz, int linhas, int colunas){
 void verificaCorretude(double *matrizL, double *matrizU, double *matriz,int linhas){
 	int i,j,k;
 	double soma;
+	int correcao = 0;
 	for(i=0;i<linhas;i++){
 		for(j=0; j<linhas; j++){
 			soma = 0;
 			for(k=0; k<linhas; k++){
 				soma+= matrizL[i*linhas+k] * matrizU[k*linhas+j];
 			}			
-			if(soma >= (matriz[i*linhas+j] + FATOR_ERRO) || soma <= (matriz[i*linhas+j] - FATOR_ERRO)){
+			if(soma >= (matriz[i*linhas+j+correcao] + FATOR_ERRO) || soma <= (matriz[i*linhas+j+correcao] - FATOR_ERRO)){
 				printf("Erro na verificacão da linha %d x coluna %d! ",i,j);			
-				printf("(esperado: %lf; encontrado %lf)\n",matriz[i*linhas+j],soma);
+				printf("(esperado: %lf; encontrado %lf)\n",matriz[i*linhas+j+correcao],soma);
 			}
 		}
+		correcao++;
 	}
 }
 
@@ -110,36 +113,81 @@ void gravaResposta(double *incognitas,char *linhas){
 
 }
 
-void calculaMatrizLU(double *matrizL, double *matrizU, int linhas, int linhaPivo, int inicio, int fim, int coluna){  
+double *extraiResultados(double *matriz, int linhas, int colunas){
 	int i;
+	double *resultados = malloc(sizeof(double)*linhas);
+	for(i=0; i< linhas; i++){
+		resultados[i] = matriz[i * colunas +colunas-1];
+	}
+	return resultados;
+}
+
+void calculaY(double *resultados, double *matrizL, double *vetorY, int linhas){
+	vetorY[0] = resultados[0];
+	int i,j;
+	for(i=1; i < linhas; i++){
+		double valor = resultados[i];
+		for(j=0; j < i; j++){
+			valor -= matrizL[i*linhas+j]*vetorY[j];
+		}
+		vetorY[i] = valor;		
+	}	
+}
+
+void calculaIncognitas(double *vetorY, double *matrizU, double *incognitas, int linhas, int colunas){
+	incognitas[linhas] = vetorY[linhas]/matrizU[linhas*colunas-1];
+	int i,j;
+	for(i=linhas-1; i >=0 ; i--){
+		double valor = vetorY[i];
+		for(j=i+1; j<colunas; j++){
+			valor -= matrizU[i*colunas+j] * incognitas[j];
+		}
+		incognitas[i] = valor / matrizU[i*linhas+i];
+	} 
+}
+
+
+void calculaMatrizLU(double *matrizL, double *matrizU, int linhas, int linhaPivo, int inicio, int fim, int coluna){  
 		int linhaZerar = inicio;
-		for(linhaZerar; linhaZerar < fim; linhaZerar++){
+		for(linhaZerar; linhaZerar < fim+1; linhaZerar++){
 			double coeficiente = (-1)* (matrizU[linhaZerar*linhas+coluna]/matrizU[linhaPivo*linhas+coluna]);
 			int j;
-			int cont = 0;
-			for(j=i; j < linhas; j++){
+			for(j=0; j < linhas; j++){
 				matrizU[linhaZerar*linhas+j] = matrizU[linhaPivo*linhas+j] * coeficiente + matrizU[linhaZerar*linhas+j];
-				cont++;
 			}
 			matrizL[linhaZerar*linhas+coluna] = coeficiente * (-1); 
 		}
 }
 
+void criaNovaMatrizLU(double *matrizL, double *matrizU, int linhas, int inicio, int fim, int coluna, double novaMatrizU[], double novaMatrizL[]){  
+	int i,j;
+		for(i=inicio;i<fim+1;i++){
+			for(j=0;j<linhas;j++){
+				matrizU[i*linhas+j] = novaMatrizU[i*linhas+j];
+			}
+			matrizL[i*linhas+coluna] = novaMatrizL[i*linhas+coluna];	
+		}
+}
+
 int main(int argc, char *argv[]){
+  int linhas = atoi(argv[2]);
+  int colunas = linhas+1;
+  double *matriz;
+  double *matrizU;
+  double *matrizL;
+
+	matrizU = malloc(sizeof(double)*linhas*linhas);
+	matrizL = malloc(sizeof(double)*linhas*linhas);
+
 	struct struct_info{
-		double *matrizU;
-		double *matrizL;
+		double matrizU[(linhas*linhas)-1];
+		double matrizL[(linhas*linhas)-1];
 		int inicio;
 		int fim;
 	};
 
 
 	struct struct_info info;
-  int linhas = atoi(argv[2]);
-  int colunas = linhas+1;
-  double *matriz;
-  double *matrizU;
-  double *matrizL;
 
   int myid, numprocs;
   MPI_Status status;
@@ -147,6 +195,7 @@ int main(int argc, char *argv[]){
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
   MPI_Comm_rank(MPI_COMM_WORLD,&myid);
+	
 	numprocs--;
 	int mestre = 0;
 	int linhaPivo;
@@ -156,6 +205,7 @@ int main(int argc, char *argv[]){
 		matriz = leArquivo(argv[1],linhas,colunas);
 		matrizU = inicializaMatrizU(matriz, linhas);
 		matrizL = inicializaMatrizL(matriz, linhas);
+
 		int linhasConsideradas = linhas - 1;
 		int divisao;
 		int i,j;
@@ -163,29 +213,49 @@ int main(int argc, char *argv[]){
 			divisao = linhasConsideradas/numprocs;
 			int qtdProcs = (numprocs>=linhasConsideradas?linhasConsideradas:numprocs);
 			linhaPivo = i;
+			printf("divisao %d\n",divisao);
+			printf("qtdP %d\n",qtdProcs);
 			while(matrizU[linhaPivo*linhas+i] == 0){
 				linhaPivo--;
 			}
-
+	//		inicio = i+1;
+		//	fim = 0;
 			for(j=1;j<=qtdProcs;j++){
 				MPI_Send(&linhaPivo,1,MPI_INT,j,1,MPI_COMM_WORLD);
 				MPI_Send(matrizU,(linhas*linhas),MPI_DOUBLE,j,1,MPI_COMM_WORLD);
 				MPI_Send(matrizL,linhas*linhas,MPI_DOUBLE,j,1,MPI_COMM_WORLD);
-				inicio = fim+1;
-				fim = divisao*j;
+				inicio = (j-1) * divisao + i;
+				if (j==1){
+					inicio++;
+				}
+				fim = j*divisao +i;
 				if (j == qtdProcs){
 					fim = linhas-1;
 				}
+				printf("inicio %d\n",inicio);
+				printf("fim %d\n",fim);
 				MPI_Send(&fim,1,MPI_INT,j,1,MPI_COMM_WORLD);
 				MPI_Send(&inicio,1,MPI_INT,j,1,MPI_COMM_WORLD);
 			  MPI_Send(&i,1,MPI_INT,j,1,MPI_COMM_WORLD);
 			}			
-			for(j=1;j<=qtdProcs;j++){
+			for(j=1;j<=qtdProcs;j++){				
 				MPI_Recv(&info,sizeof(info),MPI_PACKED,MPI_ANY_SOURCE,1,MPI_COMM_WORLD, &status);	
-				printf("Inicio: %d Fim: %d \n",info.inicio, info.fim);
+				criaNovaMatrizLU(matrizL, matrizU, linhas, info.inicio, info.fim, i, info.matrizU, info.matrizL);
 			}
 			linhasConsideradas--;
 		}
+		linhaPivo = -1;
+		for(i=1;i<=numprocs;i++){
+			MPI_Send(&linhaPivo,1,MPI_INT,i,1,MPI_COMM_WORLD);
+		}
+
+		double *vetorY = malloc(sizeof(double)*linhas);
+		double *incognitas = malloc(sizeof(double)*linhas);	
+		double *resultados = extraiResultados(matriz,linhas,colunas);
+		calculaY(resultados,matrizL,vetorY, linhas);	
+		calculaIncognitas(vetorY,matrizU,incognitas, linhas, linhas);
+		verificaCorretude(matrizL, matrizU, matriz,linhas);
+		gravaResposta(incognitas,argv[2]);
 
   }else{
 		int colunaAtual;
@@ -194,20 +264,18 @@ int main(int argc, char *argv[]){
 			if (linhaPivo == -1){
 				break;
 			}
-//			matrizU = malloc(sizeof(double)*linhas*linhas);
-//			printf("%f\n",matrizU[0]);
 			MPI_Recv(matrizU,linhas*linhas,MPI_DOUBLE,mestre,1,MPI_COMM_WORLD, &status);
-			printf("%f\n",matrizU[0]);
 			MPI_Recv(matrizL,linhas*linhas,MPI_DOUBLE,mestre,1,MPI_COMM_WORLD, &status);
 			MPI_Recv(&fim,1,MPI_INT,mestre,1,MPI_COMM_WORLD, &status);
-//			printf("Fim: %d\n",fim);
 			MPI_Recv(&inicio,1,MPI_INT,mestre,1,MPI_COMM_WORLD, &status);
-//			printf("Inicio: %d\n",inicio);
 			MPI_Recv(&colunaAtual,1,MPI_INT,mestre,1,MPI_COMM_WORLD, &status);	
-//			printf("Coluna: %d\n",colunaAtual);
+
 			calculaMatrizLU(matrizL, matrizU, linhas, linhaPivo, inicio, fim, colunaAtual);
-			info.matrizU = matrizU;
-			info.matrizL = matrizL;
+			int i;
+			for(i=0;i<linhas*linhas;i++){
+				info.matrizU[i] = matrizU[i];
+				info.matrizL[i] = matrizL[i];
+			}	
 			info.inicio = inicio;
 			info.fim = fim;
 			MPI_Send(&info,sizeof(info),MPI_PACKED,mestre,1,MPI_COMM_WORLD);			

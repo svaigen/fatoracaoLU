@@ -74,7 +74,7 @@ void imprimeMatriz(double **matriz, int linhas, int colunas){
 	printf("\n");
 }
 
-void **calculaMatrizLU(double **matriz, double **matrizL, double **matrizU, int linhas){  
+void calculaMatrizLU(double **matriz, double **matrizL, double **matrizU, int linhas){  
 	int i;
 	for(i=0; i< linhas; i++){
 		int linhaZerar = i+1;
@@ -180,6 +180,10 @@ int main(int argc, char *argv[]){
 	double *resultados = extraiResultados(matriz,linhas,colunas);
 	calculaY(resultados,matrizL,vetorY, linhas);	
 	calculaIncognitas(vetorY,matrizU,incognitas, linhas-1, linhas-1);
+int i;
+for(i=0;i<linhas;i++){
+			printf("%f \n",vetorY[i]);
+		}
 	verificaCorretude(matrizL, matrizU, matriz,linhas);
 	gravaResposta(incognitas,argv[2]);
 }

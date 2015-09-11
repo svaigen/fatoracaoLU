@@ -180,6 +180,8 @@ int main(int argc, char *argv[]){
 	double *resultados = extraiResultados(matriz,linhas,colunas);
 	calculaY(resultados,matrizL,vetorY, linhas);	
 	calculaIncognitas(vetorY,matrizU,incognitas, linhas-1, linhas-1);
+imprimeMatriz(matrizU,linhas,linhas);
+		imprimeMatriz(matrizL,linhas,linhas);
 	verificaCorretude(matrizL, matrizU, matriz,linhas);
 	gravaResposta(incognitas,argv[2]);
 }
