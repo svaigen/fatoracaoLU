@@ -5,6 +5,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <mpi.h>
+#include <time.h>
 
 #define MAX_LINHAS 10000
 #define MAX_COLUNAS 10000
@@ -180,6 +181,10 @@ void copiaMatrizLU(double *matrizL, double *matrizU, int linhas, int inicio, int
 }
 
 int main(int argc, char *argv[]){
+  clock_t tempoInicialGeral, tempoFinalGeral, tempoInicialLU, tempoFinalLU;
+
+	tempoInicialGeral = clock();
+
 	int i;
   int linhas = atoi(argv[2]);
   int colunas = linhas+1;
@@ -235,6 +240,7 @@ int main(int argc, char *argv[]){
 		int linhasConsideradas = linhas - 1;
 		int divisao;
 		int j;
+		tempoInicialLU = clock();
 		for(i=0;i<(linhas-1);i++){
 			divisao = linhasConsideradas/escravos;
 			qtdProcs = (escravos>=linhasConsideradas?linhasConsideradas:escravos);
@@ -288,6 +294,7 @@ int main(int argc, char *argv[]){
 			//}
 			linhasConsideradas--;
 		}
+		tempoFinalLU=clock();
 		//Encerra outros processos
 		linhaPivo = -1;
     //MPI_Bcast(&linhaPivo,1,MPI_INT,mestre,MPI_COMM_WORLD);		
@@ -304,7 +311,9 @@ int main(int argc, char *argv[]){
 		calculaIncognitas(vetorY,matrizU,incognitas, linhas, linhas);
 		verificaCorretude(matrizL, matrizU, matriz,linhas);
 		gravaResposta(incognitas,argv[2]);
-
+		tempoFinalGeral = clock();
+		printf("Tempo de execucao da fatoracao LU: %.2f segundos \n",(float)(tempoFinalLU - tempoInicialLU)/CLOCKS_PER_SEC);
+		printf("Tempo de execucao total: %.2f segundos \n",(float)(tempoFinalGeral - tempoInicialGeral)/CLOCKS_PER_SEC);
   }else{
 		MPI_Bcast(matrizU,totalElementos,MPI_DOUBLE,mestre,MPI_COMM_WORLD);		
     MPI_Bcast(matrizL,totalElementos,MPI_DOUBLE,mestre,MPI_COMM_WORLD);

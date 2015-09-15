@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
+#include <time.h>
 
 #define MAX_LINHAS 10000
 #define MAX_COLUNAS 10000
@@ -168,12 +169,16 @@ void gravaResposta(double *incognitas,char *linhas){
 }
 
 int main(int argc, char *argv[]){
-  int linhas = atoi(argv[2]);
+	clock_t tempoInicialGeral, tempoFinalGeral, tempoInicialLU, tempoFinalLU;
+	tempoInicialGeral = clock();  
+	int linhas = atoi(argv[2]);
   int colunas = linhas+1;
   double **matriz = leArquivo(argv[1],linhas);
 	double **matrizU = inicializaMatrizU(matriz, linhas);
 	double **matrizL = inicializaMatrizL(matriz, linhas);
+	tempoInicialLU = clock();
   calculaMatrizLU(matriz, matrizL, matrizU, linhas);
+	tempoFinalLU = clock();
 
 	double *vetorY = malloc(sizeof(double)*linhas);
 	double *incognitas = malloc(sizeof(double)*linhas);	
@@ -182,4 +187,7 @@ int main(int argc, char *argv[]){
 	calculaIncognitas(vetorY,matrizU,incognitas, linhas-1, linhas-1);
 	verificaCorretude(matrizL, matrizU, matriz,linhas);
 	gravaResposta(incognitas,argv[2]);
+	tempoFinalGeral = clock();
+	printf("Tempo de execucao da fatoracao LU: %.8f segundos \n",(float)(tempoFinalLU - tempoInicialLU)/CLOCKS_PER_SEC);
+	printf("Tempo de execucao total: %.8f segundos \n",(float)(tempoFinalGeral - tempoInicialGeral)/CLOCKS_PER_SEC);
 }
