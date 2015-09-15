@@ -194,14 +194,6 @@ int main(int argc, char *argv[]){
 
 	matrizU = malloc(sizeof(double)*linhas*linhas-1);
 	matrizL = malloc(sizeof(double)*linhas*linhas-1);
-
-//	double *novaU;
-//	double *novaL;
-
-//	novaU = malloc(sizeof(double)*linhas*linhas-1);
-//	novaL = malloc(sizeof(double)*linhas*linhas-1);
-
-
   int myid, numprocs;
   MPI_Status status;
   MPI_Init(&argc, &argv);
@@ -220,7 +212,7 @@ int main(int argc, char *argv[]){
   MPI_Group_incl(grupoGlobal, (escravos), destinos, &grupoEscravos);
 	MPI_Comm commEscravos;
   MPI_Comm_create(MPI_COMM_WORLD, grupoEscravos, &commEscravos);	
-//	numprocs--;
+
 	int totalElementos = linhas*linhas;
 	int mestre = 0;
 	int linhaPivo;
@@ -255,7 +247,7 @@ int main(int argc, char *argv[]){
 //		    MPI_Bcast(&linhaPivo,1,MPI_INT,mestre,MPI_COMM_WORLD);		
 //				MPI_Bcast(&i,1,MPI_INT,mestre,MPI_COMM_WORLD);		
 //		    MPI_Bcast(&qtdProcs,1,MPI_INT,mestre,MPI_COMM_WORLD);		
-		//	fim = 0;
+
 			for(j=1;j<=qtdProcs;j++){
 				MPI_Send(&linhaPivo,1,MPI_INT,j,1,MPI_COMM_WORLD);				
 				MPI_Send(&i,1,MPI_INT,j,2,MPI_COMM_WORLD);		
@@ -265,36 +257,23 @@ int main(int argc, char *argv[]){
 					fim = inicio;	
 				}else{
 				inicio = (j-1) * divisao + i;
-				//if (j==1){
 					inicio++;
-				//}
 				fim = j*divisao +i;
 				}
 				if (j == qtdProcs){
 					fim = linhas-1;
 				}
-			//	printf("inicio %d\n",inicio);
-			//	printf("fim %d\n",fim);
 				MPI_Send(&fim,1,MPI_INT,j,4,MPI_COMM_WORLD);
 				MPI_Send(&inicio,1,MPI_INT,j,5,MPI_COMM_WORLD);
-				//MPI_Send(&matrizU[inicio*linhas],((fim-inicio+1)*linhas),MPI_DOUBLE,j,1,MPI_COMM_WORLD);
-				//MPI_Send(&matrizL[inicio*linhas],((fim-inicio+1)*linhas),MPI_DOUBLE,j,1,MPI_COMM_WORLD);
 				inicio++;
 			}			
-			//for(j=1;j<=qtdProcs;j++){
-				
-				//MPI_Recv(&info,1,mystruct,MPI_ANY_SOURCE,1,MPI_COMM_WORLD, &status);
-				//MPI_Recv(&fim,1,MPI_INT,j,1,MPI_COMM_WORLD, &status);
-				//MPI_Recv(&inicio,1,MPI_INT,j,1,MPI_COMM_WORLD, &status);
-				MPI_Recv(matrizU,totalElementos,MPI_DOUBLE,MPI_ANY_SOURCE,1,MPI_COMM_WORLD, &status);
-				MPI_Recv(matrizL,totalElementos,MPI_DOUBLE,MPI_ANY_SOURCE,1,MPI_COMM_WORLD, &status);
-				//printf("%d ",i);
-				//criaNovaMatrizLU(matrizL, matrizU, linhas, inicio, fim, i, novaU, novaL);
-				//printf("%d\n",i);
-			//}
+//			MPI_Recv(matrizU,totalElementos,MPI_DOUBLE,MPI_ANY_SOURCE,1,MPI_COMM_WORLD, &status);
+//			MPI_Recv(matrizL,totalElementos,MPI_DOUBLE,MPI_ANY_SOURCE,1,MPI_COMM_WORLD, &status);
 			linhasConsideradas--;
 		}
 		tempoFinalLU=clock();
+		MPI_Recv(matrizU,totalElementos,MPI_DOUBLE,MPI_ANY_SOURCE,1,MPI_COMM_WORLD, &status);
+		MPI_Recv(matrizL,totalElementos,MPI_DOUBLE,MPI_ANY_SOURCE,1,MPI_COMM_WORLD, &status);
 		//Encerra outros processos
 		linhaPivo = -1;
     //MPI_Bcast(&linhaPivo,1,MPI_INT,mestre,MPI_COMM_WORLD);		
@@ -312,8 +291,8 @@ int main(int argc, char *argv[]){
 		verificaCorretude(matrizL, matrizU, matriz,linhas);
 		gravaResposta(incognitas,argv[2]);
 		tempoFinalGeral = clock();
-		printf("Tempo de execucao da fatoracao LU: %.8f segundos \n",(float)(tempoFinalLU - tempoInicialLU)/CLOCKS_PER_SEC);
-		printf("Tempo de execucao total: %.8f segundos \n",(float)(tempoFinalGeral - tempoInicialGeral)/CLOCKS_PER_SEC);
+		printf("Tempo de execucao da fatoracao LU: %.8lf segundos \n",(double)(tempoFinalLU - tempoInicialLU)/CLOCKS_PER_SEC);
+		printf("Tempo de execucao total: %.8lf segundos \n",(double)(tempoFinalGeral - tempoInicialGeral)/CLOCKS_PER_SEC);
   }else{
 		MPI_Bcast(matrizU,totalElementos,MPI_DOUBLE,mestre,MPI_COMM_WORLD);		
     MPI_Bcast(matrizL,totalElementos,MPI_DOUBLE,mestre,MPI_COMM_WORLD);
@@ -345,7 +324,7 @@ int main(int argc, char *argv[]){
         MPI_Bcast(&matrizL[posInicial],qtdeEnviados,MPI_DOUBLE,i,commEscravos);
       }
 
-			if (myid == 1){
+			if (myid == 1 && qtdProcs == 1){
     	  MPI_Send(matrizU, totalElementos, MPI_DOUBLE, mestre, 1, MPI_COMM_WORLD);
     	  MPI_Send(matrizL, totalElementos, MPI_DOUBLE, mestre, 1, MPI_COMM_WORLD);
     	}

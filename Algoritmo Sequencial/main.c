@@ -188,6 +188,6 @@ int main(int argc, char *argv[]){
 	verificaCorretude(matrizL, matrizU, matriz,linhas);
 	gravaResposta(incognitas,argv[2]);
 	tempoFinalGeral = clock();
-	printf("Tempo de execucao da fatoracao LU: %.8f segundos \n",(float)(tempoFinalLU - tempoInicialLU)/CLOCKS_PER_SEC);
-	printf("Tempo de execucao total: %.8f segundos \n",(float)(tempoFinalGeral - tempoInicialGeral)/CLOCKS_PER_SEC);
+	printf("Tempo de execucao da fatoracao LU: %.8lf segundos \n",(double)(tempoFinalLU - tempoInicialLU)/CLOCKS_PER_SEC);
+	printf("Tempo de execucao total: %.8lf segundos \n",(double)(tempoFinalGeral - tempoInicialGeral)/CLOCKS_PER_SEC);
 }
